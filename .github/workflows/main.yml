@@ -1,0 +1,49 @@
+name: Build HIZMOS Firmware
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Get the code from your repository
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # 2. Install the tool that compiles Arduino code
+      - name: Setup Arduino CLI
+        uses: arduino/setup-arduino-cli@v1
+
+      # 3. Install the "Brain" (ESP32 Board definitions)
+      - name: Install ESP32 Platform
+        run: |
+          arduino-cli core update-index --additional-urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+          arduino-cli core install esp32:esp32 --additional-urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+
+      # 4. Install the "Skills" (Libraries)
+      - name: Install Libraries
+        run: |
+          arduino-cli lib install "U8g2"
+          arduino-cli lib install "RF24"
+          arduino-cli lib install "Adafruit NeoPixel"
+          arduino-cli lib install "IRremote"
+          arduino-cli lib install "Adafruit PN532"
+          arduino-cli lib install "ESP32 BLE Mouse"
+          # Note: WiFi, SD, SPI, Wire, and BLEDevice are built-in to the ESP32 platform.
+
+      # 5. Cook the code (Compile)
+      # IMPORTANT: If your file is not named 'hizmos.ino', change the name below!
+      - name: Compile Sketch
+        run: |
+          mkdir build
+          arduino-cli compile --fqbn esp32:esp32:esp32s3 --output-dir ./build ./*.ino
+
+      # 6. Serve the dish (Upload the .bin file so you can download it)
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: HIZMOS-Firmware
+          path: ./build/*.bin
+
+
